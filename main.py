@@ -16,8 +16,16 @@ def get_data() -> List[Tuple]:
     for item in my_bucket.objects.all():
         if item.key.endswith('gz'):
             s3_response_object = s3.get_object(Bucket=BUCKET_NAME, Key=item.key)
-            item_data = json.loads(s3_response_object['Body'].read().decode().strip())
-            my_list.append(tuple(item_data.values()))
+            item_content = s3_response_object['Body'].read().decode().strip()
+            if '\n' in item_content:
+                item_content_split = item_content.split('\n')
+                item_content_split = item_content_split[0:len(item_content_split) - 1]
+                for current_item in item_content_split:
+                    item_as_dict = json.loads(current_item)
+                    my_list.append(tuple(item_as_dict.values()))
+            else:
+                item_as_dict = json.loads(item_content)
+                my_list.append(tuple(item_as_dict.values()))
     return my_list
 
 
@@ -29,54 +37,54 @@ def create_redshift_table_and_insert_data(data: List[Tuple]) -> None:
                             port=os.environ['PORT'])
     cur = conn.cursor()
     cur.execute("""CREATE TABLE leaflink_data(
-      "Meta:schema" varchar NOT NULL,
-      "Meta:version" varchar NOT NULL,
-      GdprComputed bool NOT NULL,
-      GdprSource varchar NOT NULL,
-      RemoteIP varchar NOT NULL,
+      "Meta:schema" varchar NULL,
+      "Meta:version" varchar NULL,
+      GdprComputed bool NULL,
+      GdprSource varchar NULL,
+      RemoteIP varchar NULL,
       UserAgent varchar NULL,
-      Ecpm int NOT NULL,
-      Datacenter bool NOT NULL,
-      BurnIn bool NOT NULL,
-      IsValidUA bool NOT NULL,
-      "User" varchar NOT NULL,
-      UserKey int NOT NULL,
-      ClickCount int NOT NULL,
+      Ecpm int NULL,
+      Datacenter bool NULL,
+      BurnIn bool NULL,
+      IsValidUA bool NULL,
+      "User" varchar NULL,
+      UserKey int NULL,
+      ClickCount int NULL,
       Id varchar NOT NULL,
-      CreatedOn varchar NOT NULL,
-      EventCreatedOn varchar nOT NULL,
-      ImpressionCreatedOn varchar NOT NULL,
-      AdTypeId int not NULL,
-      BrandId int NOT NULL,
-      CampaignId int not NULL,
-      Categories varchar NOT NULL,
-      ChannelId int NOT NULL,
-      CreativeId int NOT NULL,
-      CreativePassId int NOT NULL,
-      DeliveryMode int not NULL,
-      FirstChannelId int NOT NULL,
-      ImpressionId varchar NOT NULL,
-      DecisionId varchar NOT NULL,
-      IsNoTrack bool NOT NULL,
-      IsTrackingCookieEvents bool NOT NULL,
-      Keywords varchar NOT NULL,
-      Device varchar NOT NULL,
-      MatchingKeywords varchar NOT NULL,
-      NetworkId int NOT NULL,
-      PassId int NOT NULL,
-      PhantomCreativePassId int NOT NULL,
-      PlacementName varchar NOT NULL,
-      PhantomPassId int not NULL,
-      Price float not NULL,
-      PriorityId int NOT NULL,
-      RateType int NOT NULL,
-      Revenue float NOT NULL,
-      ServedBy varchar NOT NULL,
-      ServedByPid int NOT NULL,
-      ServedByAsg varchar NOT NULL,
-      SiteId int NOT NULL,
-      Url varchar NOT NULL,
-      ZoneId int NOT NULL,
+      CreatedOn varchar NULL,
+      EventCreatedOn varchar NULL,
+      ImpressionCreatedOn varchar NULL,
+      AdTypeId int NULL,
+      BrandId int NULL,
+      CampaignId int NULL,
+      Categories varchar NULL,
+      ChannelId int NULL,
+      CreativeId int NULL,
+      CreativePassId int NULL,
+      DeliveryMode int NULL,
+      FirstChannelId int NULL,
+      ImpressionId varchar NULL,
+      DecisionId varchar NULL,
+      IsNoTrack bool NULL,
+      IsTrackingCookieEvents bool NULL,
+      Keywords varchar NULL,
+      Device varchar NULL,
+      MatchingKeywords varchar NULL,
+      NetworkId int NULL,
+      PassId int NULL,
+      PhantomCreativePassId int NULL,
+      PlacementName varchar NULL,
+      PhantomPassId int NULL,
+      Price float NULL,
+      PriorityId int NULL,
+      RateType int NULL,
+      Revenue float NULL,
+      ServedBy varchar NULL,
+      ServedByPid int NULL,
+      ServedByAsg varchar NULL,
+      SiteId int NULL,
+      Url varchar NULL,
+      ZoneId int NULL,
       PRIMARY KEY (Id))""")
     execute_values(cur,
                    'INSERT INTO leaflink_data VALUES %s',
